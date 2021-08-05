@@ -18,6 +18,10 @@ module Array =
             a.[i] <- temp
 module Seq =
 
+    let filterIndexed (pred: int -> 'a -> bool) (s: ' a seq) =
+        s |> Seq.indexed |> Seq.filter (fun (i,x) -> pred i x) |> Seq.map snd
+    let removeIndex (idx:int) = filterIndexed (fun i _ -> i <> idx)
+
     /// Shuffle a sequence with a given RNG.
     /// Uses the provided random number generator and the Durstenfeld shuffle algorithm.
     /// getRandomIndexUpTo is a function which generates a random number between 0 and the given number (both inclusive).
