@@ -3,3 +3,5 @@ Fable.Elmish.Debugger
 Fable.Elmish.React
 Fulma
 FSharp.Core
+Fulma.Elmish
+Fable.Elmish.HMR

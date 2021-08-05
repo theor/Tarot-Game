@@ -10,62 +10,79 @@ open Elmish.Debug
 open Elmish.React
 open Fable.React
 open Fable.React.Props
+open Fulma
 open Tarot.Ext
 open Tarot.Game
+open Elmish.HMR
+
 
 // MODEL
 
 type Model = GameState
 
 type Msg =
-| Increment
-| Decrement
+    | Increment
+    | Decrement
 
-let init() : Model = GameState.Playing {
-    Players = [||]
-    Taker = 0
-}
+let init (): Model =
+    GameState.Playing { Players = [||]; Taker = 0 }
 
 // UPDATE
 
-let update (msg:Msg) (model:Model) =
+let update (msg: Msg) (model: Model) =
     match msg with
-    _ -> model
+    | _ -> model
 //    | Increment -> model + 1
 //    | Decrement -> model - 1
 
 // VIEW (rendered with React)
 
 open Tarot.Types
+
 let CardBack = 0x1F0A0
 
-let cardSymbol (c:Card) =
-    let uni = match c with
-        | Trump t -> 0x1F0E0 + t
-        | Suit (t,s) -> t +
-            match s with
-            | Suit.Spades -> 0x1F0A0
-            | Suit.Heart -> 0x1F0B0
-            | Suit.Diamonds -> 0x1F0C0
-            | Suit.Clubs -> 0x1F0D0
-        | _ -> 0x1F0BF
-    Char.toUnicode(uni)
-let viewCard dispatch (c:Card) =
-    let isRed,isBlack,isTrump =
+let cardSymbol (c: Card) =
+    let uni =
         match c with
-        | Trump _ -> false,false,true
-        | Suit (_,Suit.Heart) | Suit (_,Suit.Diamonds) -> true,false,false
-        | Suit (_,Suit.Spades) | Suit (_,Suit.Clubs) -> false,true,false
+        | Trump t -> 0x1F0E0 + t
+        | Suit (t, s) ->
+            t
+            + match s with
+              | Suit.Spades -> 0x1F0A0
+              | Suit.Heart -> 0x1F0B0
+              | Suit.Diamonds -> 0x1F0C0
+              | Suit.Clubs -> 0x1F0D0
+        | _ -> 0x1F0BF
+
+    Char.toUnicode (uni)
+
+let viewCard dispatch (c: Card) =
+    let isRed, isBlack, isTrump =
+        match c with
+        | Trump _ -> false, false, true
+        | Suit (_, Suit.Heart)
+        | Suit (_, Suit.Diamonds) -> true, false, false
+        | Suit (_, Suit.Spades)
+        | Suit (_, Suit.Clubs) -> false, true, false
+
     div [] [
-        div [ classList ["card",true; "card-red", isRed; "card-black",isBlack; "card-trump",isTrump] ] [
+        div [ classList [ "card", true
+                          "card-red", isRed
+                          "card-black", isBlack
+                          "card-trump", isTrump ] ] [
             str (cardSymbol c)
         ]
         div [] [ str (sprintf "%O" c) ]
     ]
 
-let view (model:Model) dispatch =
-    div []
-      (game |> Seq.map (viewCard dispatch))
+let view (model: Model) dispatch =
+
+    div [] [
+        Button.button [ Button.Size IsSmall; Button.Color Color.IsDanger ] [
+            str "A button"
+        ]
+        div [] (game |> Seq.map (viewCard dispatch))
+    ]
 //  div []
 //      [ button [ OnClick (fun _ -> dispatch Increment) ] [ str "+" ]
 //        div [] [ str (string model) ]
