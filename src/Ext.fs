@@ -1,4 +1,7 @@
 module Tarot.Ext
+
+open Fable.Core
+
 module Array =
 
     /// Returns true if i is a valid index in the array a.
@@ -47,3 +50,6 @@ module Seq =
         let getInt max = rngSeeded.Next (max + 1) // because it's exclusive max, shuffle expects inclusive
         s |> shuffle getInt
 
+module Char =
+    [<Emit("String.fromCodePoint($0)")>]
+    let toUnicode (unicodeNumericValue:int) = jsNative
