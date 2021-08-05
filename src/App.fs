@@ -14,7 +14,8 @@ open Fulma
 open Tarot.Ext
 open Tarot.Game
 open Elmish.HMR
-
+open Fable.Core.JsInterop
+importAll "../sass/main.sass"
 
 // MODEL
 
@@ -76,12 +77,13 @@ let viewCard dispatch (c: Card) =
     ]
 
 let view (model: Model) dispatch =
-
-    div [] [
-        Button.button [ Button.Size IsSmall; Button.Color Color.IsDanger ] [
-            str "A button"
+    Section.section [][
+        Container.container[] [
+            Button.button [ Button.Color Color.IsDanger ] [
+                str "A button"
+            ]
+            div [] (game |> Seq.map (viewCard dispatch))
         ]
-        div [] (game |> Seq.map (viewCard dispatch))
     ]
 //  div []
 //      [ button [ OnClick (fun _ -> dispatch Increment) ] [ str "+" ]
