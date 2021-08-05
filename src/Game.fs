@@ -5,7 +5,9 @@ open Tarot.Ext
 
 type Player = { index: int; name: string; cards: Card[] }
 
-type Playing = { players: Player []; taker: Player }
+type Playing = { Players: Player []; Taker: int }
+with
+    member this.TakerPlayer = this.Players.[this.Taker]
 
 type GameState =
     | Start
@@ -18,10 +20,10 @@ type Game = {
     state: GameState
 }
 
-let playCard (state:Playing) p i =
-    let p = { p with cards =
-                        p.cards |>  Seq.removeIndex i |> Seq.toArray
+let playCard (state:Playing) pi i =
+    let p = { state.Players.[pi] with cards =
+                        state.Players.[pi].cards |>  Seq.removeIndex i |> Seq.toArray
             }
-    { state with players = state.players
+    { state with Players = state.Players
                            |> Array.map (fun pp -> if pp.index <> p.index then pp else p )
     }
