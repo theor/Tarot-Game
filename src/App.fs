@@ -11,23 +11,28 @@ open Elmish.React
 open Fable.React
 open Fable.React.Props
 open Tarot.Ext
+open Tarot.Game
 
 // MODEL
 
-type Model = int
+type Model = GameState
 
 type Msg =
 | Increment
 | Decrement
 
-let init() : Model = 0
+let init() : Model = GameState.Playing {
+    Players = [||]
+    Taker = 0
+}
 
 // UPDATE
 
 let update (msg:Msg) (model:Model) =
     match msg with
-    | Increment -> model + 1
-    | Decrement -> model - 1
+    _ -> model
+//    | Increment -> model + 1
+//    | Decrement -> model - 1
 
 // VIEW (rendered with React)
 
@@ -51,7 +56,12 @@ let viewCard dispatch (c:Card) =
         | Trump _ -> false,false,true
         | Suit (_,Suit.Heart) | Suit (_,Suit.Diamonds) -> true,false,false
         | Suit (_,Suit.Spades) | Suit (_,Suit.Clubs) -> false,true,false
-    div [ classList ["card",true; "card-red", isRed; "card-black",isBlack; "card-trump",isTrump] ] [ str (sprintf "%s %O" (cardSymbol c) c) ]
+    div [] [
+        div [ classList ["card",true; "card-red", isRed; "card-black",isBlack; "card-trump",isTrump] ] [
+            str (cardSymbol c)
+        ]
+        div [] [ str (sprintf "%O" c) ]
+    ]
 
 let view (model:Model) dispatch =
     div []

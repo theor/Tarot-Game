@@ -36,20 +36,20 @@ let RndGameHas78Points () =
 
 let testGame (cardsPerPlayer: Card seq seq): Playing =
     let players = cardsPerPlayer |> Seq.mapi (fun i cards -> {index=i; name=sprintf "Player%i" i; cards = Seq.toArray cards}) |> Seq.toArray
-    { players=players; taker = players.[0] }
+    { Players=players; Taker = 0 }
 
 [<Test>]
 let playCardRemovesCard () =
     let g = testGame [
             [Card.Trump 1; Card.Trump 2]
         ]
-    let g2 = playCard g g.players.[0] 0 in
-    Assert.AreEqual(1, g2.players.[0].cards.Length)
+    let g2 = playCard g 0 0 in
+    Assert.AreEqual(1, g2.Players.[0].cards.Length)
 
 [<Test>]
 let valid () =
     let g = testGame [
             [Card.Trump 1; Card.Trump 2]
         ]
-    let g2 = playCard g g.players.[0] 0 in
-    Assert.AreEqual(1, g2.players.[0].cards.Length)
+    let g2 = playCard g 0 0 in
+    Assert.AreEqual(1, g2.Players.[0].cards.Length)
