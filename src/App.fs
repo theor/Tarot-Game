@@ -6,9 +6,11 @@ module App
 *)
 
 open Elmish
+open Elmish.Debug
 open Elmish.React
 open Fable.React
 open Fable.React.Props
+open Tarot.Ext
 
 // MODEL
 
@@ -29,15 +31,44 @@ let update (msg:Msg) (model:Model) =
 
 // VIEW (rendered with React)
 
-let view (model:Model) dispatch =
+open Tarot.Types
+let CardBack = 0x1F0A0
 
-  div []
-      [ button [ OnClick (fun _ -> dispatch Increment) ] [ str "+" ]
-        div [] [ str (string model) ]
-        button [ OnClick (fun _ -> dispatch Decrement) ] [ str "-" ] ]
+let cardSymbol (c:Card) =
+    let uni = match c with
+        | Trump t -> 0x1F0E0 + t
+        | Suit (t,s) -> t +
+            match s with
+            | Suit.Spades -> 0x1F0A0
+            | Suit.Heart -> 0x1F0B0
+            | Suit.Diamonds -> 0x1F0C0
+            | Suit.Clubs -> 0x1F0D0
+        | _ -> 0x1F0BF
+    Char.toUnicode(uni)
+let viewCard dispatch (c:Card) =
+    let isRed,isBlack,isTrump =
+        match c with
+        | Trump _ -> false,false,true
+        | Suit (_,Suit.Heart) | Suit (_,Suit.Diamonds) -> true,false,false
+        | Suit (_,Suit.Spades) | Suit (_,Suit.Clubs) -> false,true,false
+    div [ classList ["card",true; "card-red", isRed; "card-black",isBlack; "card-trump",isTrump] ] [ str (sprintf "%s %O" (cardSymbol c) c) ]
+
+let view (model:Model) dispatch =
+    div []
+      (game |> Seq.map (viewCard dispatch))
+//  div []
+//      [ button [ OnClick (fun _ -> dispatch Increment) ] [ str "+" ]
+//        div [] [ str (string model) ]
+//        button [ OnClick (fun _ -> dispatch Decrement) ] [ str "-" ]
+//        viewCard (Card.Suit (1, Heart)) dispatch
+//        viewCard (Card.Trump 1) dispatch
+//      ]
 
 // App
 Program.mkSimple init update view
 |> Program.withReactSynchronous "elmish-app"
+#if DEBUG
+|> Program.withDebugger
+#endif
 |> Program.withConsoleTrace
 |> Program.run

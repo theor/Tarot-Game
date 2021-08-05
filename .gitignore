@@ -176,6 +176,8 @@ $RECYCLE.BIN/
 
 # NuGet Packages Directory
 packages/
+dist/
+.parcel-cache/
 
 # Generated documentation folder
 docs/output/
