@@ -1,5 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{99680B00-9889-4AA0-AF18-6085BADBB1BC}"
+	ProjectSection(SolutionItems) = preProject
+		paket.dependencies = paket.dependencies
+	EndProjectSection
+EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tarot.Tests", "Tarot.Tests\Tarot.Tests.fsproj", "{EFD88C7E-E801-45B3-8EC2-AEB73258D74C}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "App", "src\App.fsproj", "{0056762C-6BA4-4567-9A65-30883FC01479}"
