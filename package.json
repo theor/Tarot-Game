@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "@fortawesome/fontawesome-free": "^5.15.4",
+    "@parcel/transformer-image": "2.0.0-rc.0",
     "@parcel/transformer-sass": "2.0.0-rc.0",
     "parcel": "^2.0.0-rc.0",
     "remotedev": "^0.2.9"
