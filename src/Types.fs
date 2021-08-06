@@ -53,7 +53,7 @@ let dogFor (n: int): int =
     | 3 | 4 -> 6
     | 5 -> 3
     | _ -> failwithf "Wrong number of player: %i" n
-let deal (n: int) =
+let deal (n: int): Card [] * Card [] [] =
     let dogCount = dogFor n in
     let shuffled = game |> Seq.shuffleSeeded 42 |> Seq.toArray
     printfn "%A" shuffled
