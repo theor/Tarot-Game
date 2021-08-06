@@ -28,7 +28,11 @@ type Msg =
 
 let init (): Model =
     let dog, players = Tarot.Types.deal 4 in
-    GameState.Playing { Players = players |> Seq.mapi (fun i x -> {index=i;name = "asd";cards=x}) |> Seq.toArray; Taker = 0 }
+    GameState.Playing {
+        Players = players |> Seq.mapi (fun i x -> {Index=i;Name = "asd";Cards=x}) |> Seq.toArray
+        Taker = 0
+        Trick = { StartingPlayer=0; PlayedCards = [] }
+    }
 
 // UPDATE
 
@@ -60,36 +64,44 @@ let cardSymbol (c: Card) =
     Char.toUnicode (uni)
 
 let viewCard dispatch (c: Card) =
-    let isRed, isBlack, isTrump =
-        match c with
-        | Trump _ -> false, false, true
-        | Suit (_, Suit.Heart)
-        | Suit (_, Suit.Diamonds) -> true, false, false
-        | Suit (_, Suit.Spades)
-        | Suit (_, Suit.Clubs) -> false, true, false
+//    let isRed, isBlack, isTrump =
+//        match c with
+//        | Trump _ -> false, false, true
+//        | Suit (_, Suit.Heart)
+//        | Suit (_, Suit.Diamonds) -> true, false, false
+//        | Suit (_, Suit.Spades)
+//        | Suit (_, Suit.Clubs) -> false, true, false
+        let cl = match c with
+                    | Trump i -> sprintf "card bg-%i" i
+                    | Suit (i, Suit.Heart) -> sprintf "card bg-h%i" i
+                    | Suit (i, Suit.Diamonds) -> sprintf "card bg-d%i" i
+                    | Suit (i, Suit.Spades) -> sprintf "card bg-s%i" i
+                    | Suit (i, Suit.Clubs) -> sprintf "card bg-c%i" i
 
-//    div [] [
-    div [ classList [ "card", true
-                      "card-red", isRed
-                      "card-black", isBlack
-                      "card-trump", isTrump ] ] [
-        str (cardSymbol c)
-    ]
+        div [ Class cl ] [ ]
+//    div [ classList [ "card", true
+//                      "card-red", isRed
+//                      "card-black", isBlack
+//                      "card-trump", isTrump ] ] [
+//        str (cardSymbol c)
+//    ]
 //        div [] [ str (sprintf "%O" c) ]
 //    ]
 
-let viewPlayerGame dispatch (p:Player) =
+let viewPlayerGame dispatch (state:PlayingState) (p:Player) =
 
-    div [Class "player-cards"] (p.cards |> Seq.map (viewCard dispatch))
+    div [Class "player-cards"] (p.Cards |> Seq.map (viewCard dispatch))
 let view (model: Model) dispatch =
     Section.section [][
         Container.container[] [
             Button.button [ Button.Color Color.IsDanger ] [
                 str "A button"
             ]
-            yield! match model with
+            match model with
             | GameState.Playing p ->
-                p.Players |> Seq.map (viewPlayerGame dispatch)
+                let state = getPlayingState p
+                yield Text.span [] [str <| sprintf "State: %O" state]
+                yield! p.Players |> Seq.map (viewPlayerGame dispatch state)
             | _ -> failwithf "invalid state %O" model
 //            div [] (game |> Seq.map (viewCard dispatch))
         ]
