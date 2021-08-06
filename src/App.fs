@@ -11,6 +11,7 @@ open Elmish.React
 open Fable.React
 open Fable.React.Props
 open Fulma
+open Tarot
 open Tarot.Ext
 open Tarot.Game
 open Elmish.HMR
@@ -26,7 +27,8 @@ type Msg =
     | Decrement
 
 let init (): Model =
-    GameState.Playing { Players = [||]; Taker = 0 }
+    let dog, players = Tarot.Types.deal 4 in
+    GameState.Playing { Players = players |> Seq.mapi (fun i x -> {index=i;name = "asd";cards=x}) |> Seq.toArray; Taker = 0 }
 
 // UPDATE
 
@@ -66,23 +68,30 @@ let viewCard dispatch (c: Card) =
         | Suit (_, Suit.Spades)
         | Suit (_, Suit.Clubs) -> false, true, false
 
-    div [] [
-        div [ classList [ "card", true
-                          "card-red", isRed
-                          "card-black", isBlack
-                          "card-trump", isTrump ] ] [
-            str (cardSymbol c)
-        ]
-        div [] [ str (sprintf "%O" c) ]
+//    div [] [
+    div [ classList [ "card", true
+                      "card-red", isRed
+                      "card-black", isBlack
+                      "card-trump", isTrump ] ] [
+        str (cardSymbol c)
     ]
+//        div [] [ str (sprintf "%O" c) ]
+//    ]
 
+let viewPlayerGame dispatch (p:Player) =
+
+    div [Class "player-cards"] (p.cards |> Seq.map (viewCard dispatch))
 let view (model: Model) dispatch =
     Section.section [][
         Container.container[] [
             Button.button [ Button.Color Color.IsDanger ] [
                 str "A button"
             ]
-            div [] (game |> Seq.map (viewCard dispatch))
+            yield! match model with
+            | GameState.Playing p ->
+                p.Players |> Seq.map (viewPlayerGame dispatch)
+            | _ -> failwithf "invalid state %O" model
+//            div [] (game |> Seq.map (viewCard dispatch))
         ]
     ]
 //  div []
