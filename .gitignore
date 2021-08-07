@@ -6,7 +6,8 @@ riderModule.iml
 
 public/bundle.js*
 *.fs.js
-
+*.fs.js.map
+cards/
 # Node
 node_modules/
 

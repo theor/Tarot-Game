@@ -32,6 +32,8 @@ let init (): Model * Cmd<Msg> =
         Players = players |> Seq.mapi (fun i x -> {Index=i;Name = "asd";Cards=x}) |> Seq.toArray
         Taker = 0
         Trick = { StartingPlayer=0; PlayedCards = [] }
+        AttackerTricks = []
+        DefenderTricks = []
     }, Cmd.none
 
 // UPDATE

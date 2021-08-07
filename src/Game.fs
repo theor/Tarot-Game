@@ -15,8 +15,8 @@ type Playing = {
     Players: Player []
     Taker: int
     Trick: Trick
-//    AttackerTricks: Card list
-//    DefenderTricks: Card list
+    AttackerTricks: Card list
+    DefenderTricks: Card list
 }
 with
     member this.PlayerCount = this.Players.Length
@@ -35,8 +35,8 @@ type Game = {
 
 let playCard (state:Playing) pi i =
     let card = state.Players.[pi].Cards.[i]
-    let p = { state.Players.[pi] with Cards =
-                        state.Players.[pi].Cards |>  Seq.removeIndex i |> Seq.toArray
+    let p = { state.Players.[pi] with
+                Cards = state.Players.[pi].Cards |>  Seq.removeIndex i |> Seq.toArray
             }
     { state with Players = state.Players
                            |> Array.map (fun pp -> if pp.Index <> p.Index then pp else p )
