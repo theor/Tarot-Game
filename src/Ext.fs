@@ -1,6 +1,8 @@
 module Tarot.Ext
 
 open Fable.Core
+open FsRandom
+open FsRandom.MersenneTwister
 
 module Array =
 
@@ -45,9 +47,13 @@ module Seq =
     /// s is the sequence to be shuffled.
     /// Returns a new sequence which is shuffled.
     /// NOTE: does not work on infinite sequences as the sequence is enumerated
-    let shuffleSeeded seed s =
-        let rngSeeded = new System.Random (seed)
-        let getInt max = rngSeeded.Next (max + 1) // because it's exclusive max, shuffle expects inclusive
+    let shuffleSeeded (seed:uint64) s =
+        let v = ref(StateVector.Initialize(seed))
+        let rnd (max:int) =
+            let x,v2 = MersenneTwister.mersenne !v// new System.Random (seed)
+            v := v2
+            (int x) % max
+        let getInt max = rnd (max + 1) // because it's exclusive max, shuffle expects inclusive
         s |> shuffle getInt
 
 module Char =

@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "postinstall": "dotnet tool restore",
-    "start": "dotnet fable watch src --run parcel serve src/index.html",
+    "start": "dotnet fable watch src -s --run parcel serve src/index.html",
     "build": "dotnet fable src -s && parcel build src/index.html"
   },
   "dependencies": {

@@ -23,22 +23,35 @@ importAll "../sass/main.sass"
 type Model = GameState
 
 type Msg =
-    | Increment
-    | Decrement
+    | PlayCard of Player * int
+    | EndRound
 
-let init (): Model =
+let init (): Model * Cmd<Msg> =
     let dog, players = Tarot.Types.deal 4 in
     GameState.Playing {
         Players = players |> Seq.mapi (fun i x -> {Index=i;Name = "asd";Cards=x}) |> Seq.toArray
         Taker = 0
         Trick = { StartingPlayer=0; PlayedCards = [] }
-    }
+    }, Cmd.none
 
 // UPDATE
 
 let update (msg: Msg) (model: Model) =
-    match msg with
-    | _ -> model
+    match model with
+    | Playing playing ->
+        match msg with
+        | EndRound -> Playing <| {playing with Trick = startTrick 0 },[]
+        | PlayCard(p,ci) ->
+            let m',playedCard = playCard playing p.Index ci
+            let cmd = match getPlayingState m' with
+                      | PlayingState.EndRound -> Cmd.OfAsync.perform (fun () -> async {
+                                                                                      do! Async.Sleep 1000
+                                                                                      return playedCard
+                                                                                  }) () (fun _card -> EndRound)
+                      | _ -> []
+            Playing m', cmd
+        | _ -> failwithf "Action %A not implemented for state %A" msg model
+    | _ -> failwithf "Model %A Action %A not implemented" model msg
 //    | Increment -> model + 1
 //    | Decrement -> model - 1
 
@@ -63,45 +76,39 @@ let cardSymbol (c: Card) =
 
     Char.toUnicode (uni)
 
-let viewCard dispatch (c: Card) =
-//    let isRed, isBlack, isTrump =
-//        match c with
-//        | Trump _ -> false, false, true
-//        | Suit (_, Suit.Heart)
-//        | Suit (_, Suit.Diamonds) -> true, false, false
-//        | Suit (_, Suit.Spades)
-//        | Suit (_, Suit.Clubs) -> false, true, false
-        let cl = match c with
-                    | Trump i -> sprintf "card bg-%i" i
-                    | Suit (i, Suit.Heart) -> sprintf "card bg-h%i" i
-                    | Suit (i, Suit.Diamonds) -> sprintf "card bg-d%i" i
-                    | Suit (i, Suit.Spades) -> sprintf "card bg-s%i" i
-                    | Suit (i, Suit.Clubs) -> sprintf "card bg-c%i" i
+let viewCard valid (onClick: (int -> unit) option) (cardIndex: int) (c: Card): ReactElement =
+    let cl = match c with
+                | Trump i -> sprintf "card bg-%i" i
+                | Suit (i, Suit.Heart) -> sprintf "card bg-h%i" i
+                | Suit (i, Suit.Diamonds) -> sprintf "card bg-d%i" i
+                | Suit (i, Suit.Spades) -> sprintf "card bg-s%i" i
+                | Suit (i, Suit.Clubs) -> sprintf "card bg-c%i" i
 
-        div [ Class cl ] [ ]
-//    div [ classList [ "card", true
-//                      "card-red", isRed
-//                      "card-black", isBlack
-//                      "card-trump", isTrump ] ] [
-//        str (cardSymbol c)
-//    ]
-//        div [] [ str (sprintf "%O" c) ]
-//    ]
+    div [Class "card-wrapper"] [
+        div [ yield classList ["card",true;cl,true; "card-playable", Option.isSome onClick; "valid", valid && Option.isSome onClick; "invalid", not valid && Option.isSome onClick]
+              match onClick with
+              | Some onClick -> yield OnClick (fun _ -> onClick cardIndex)
+              | None -> () ] [ ]
+    ]
 
-let viewPlayerGame dispatch (state:PlayingState) (p:Player) =
+let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
+    let onClick = match state with
+                  | PlayingState.WaitForCard pi when pi = p.Index -> (Some (fun cardIndex -> dispatch <| PlayCard(p, cardIndex) ))
+                  | _ -> None
+    div [] [
+        Text.div [] [ str <| sprintf "Player %i:" p.Index ]
+        div [Class "player-cards"] (p.Cards |> Seq.mapi (fun i c -> viewCard (cardCanBePlayed playing p.Index i) onClick i c))
+    ]
 
-    div [Class "player-cards"] (p.Cards |> Seq.map (viewCard dispatch))
 let view (model: Model) dispatch =
     Section.section [][
-        Container.container[] [
-            Button.button [ Button.Color Color.IsDanger ] [
-                str "A button"
-            ]
+        Container.container[Container.IsFullHD] [
             match model with
             | GameState.Playing p ->
                 let state = getPlayingState p
+                yield div [Class "player-cards"] (p.Trick.PlayedCards |> Seq.rev |> Seq.mapi (viewCard false None))
                 yield Text.span [] [str <| sprintf "State: %O" state]
-                yield! p.Players |> Seq.map (viewPlayerGame dispatch state)
+                yield! p.Players |> Seq.map (viewPlayerGame dispatch p state)
             | _ -> failwithf "invalid state %O" model
 //            div [] (game |> Seq.map (viewCard dispatch))
         ]
@@ -115,7 +122,7 @@ let view (model: Model) dispatch =
 //      ]
 
 // App
-Program.mkSimple init update view
+Program.mkProgram init update view
 |> Program.withReactSynchronous "elmish-app"
 #if DEBUG
 |> Program.withDebugger
