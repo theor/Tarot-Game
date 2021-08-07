@@ -20,6 +20,7 @@ type Card =
                      | i -> i.ToString()
             in
                 sprintf "%s %A" ii s
+    static member Excuse = Trump 0
 
 //type Error =
 
@@ -53,12 +54,19 @@ let dogFor (n: int): int =
     | 3 | 4 -> 6
     | 5 -> 3
     | _ -> failwithf "Wrong number of player: %i" n
+let sortCard c =
+    match c with
+    | Trump i -> 300 + i
+    | Suit(i,Suit.Heart) -> 100 + i
+    | Suit(i,Suit.Clubs) -> 200 + i
+    | Suit(i,Suit.Diamonds) -> 400 + i
+    | Suit(i,Suit.Spades) -> 500 + i
 let deal (n: int): Card [] * Card [] [] =
     let dogCount = dogFor n in
-    let shuffled = game |> Seq.shuffleSeeded 42 |> Seq.toArray
+    let shuffled = game |> Seq.shuffleSeeded 43UL |> Seq.toArray
     printfn "%A" shuffled
     let dog = shuffled |> Seq.take dogCount |> Seq.toArray
-    let players = shuffled |> Seq.skip dogCount |> Seq.splitInto n |> Seq.toArray
+    let players = shuffled |> Seq.skip dogCount |> Seq.splitInto n |> Seq.map (Seq.sortBy sortCard >> Seq.toArray) |> Seq.toArray
     (dog, players)
 
 
