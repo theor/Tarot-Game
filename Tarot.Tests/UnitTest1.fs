@@ -36,7 +36,11 @@ let RndGameHas78Points () =
 
 let testGame (cardsPerPlayer: Card seq seq): Playing =
     let players = cardsPerPlayer |> Seq.mapi (fun i cards -> {Index=i; Name=sprintf "Player%i" i; Cards = Seq.toArray cards}) |> Seq.toArray
-    { Players=players; Taker = 0; Trick = {PlayedCards = []; StartingPlayer = 0} }
+    { Players=players
+      Taker = 0
+      Trick = {PlayedCards = []; StartingPlayer = 0}
+      AttackerTricks = []
+      DefenderTricks = [] }
 
 [<Test>]
 let playCardRemovesCard () =
@@ -56,8 +60,7 @@ let valid () =
 
 
 let playableCardRulesCases() =
-    seq {
-
+    [
         yield [Trump 1; Suit(1,Diamonds)], Suit(2,Diamonds), [Trump 2],false,"Suit on trump when having a trump"
 
         yield [Trump 1; Suit(1,Diamonds)], Suit(2,Diamonds), [Suit(3,Diamonds)],true,"Suit on trump when no trump left"
@@ -72,11 +75,11 @@ let playableCardRulesCases() =
         yield [Suit(1,Diamonds)], Card.Excuse, [Suit(2,Diamonds)],true,"Excuse on suit when suit left"
         yield [Card.Excuse], Trump 2, [Suit(2,Diamonds)],true,"Trump on Excuse first"
         yield [Card.Excuse], Suit(2,Diamonds), [Trump 2],true,"Suit on Excuse first"
-    } |> Seq.map (fun x -> TestCaseData(Microsoft.FSharp.Reflection.FSharpValue.GetTupleFields x)
-                               .SetName(sprintf "%s: %s" (if x.Item4 then "Valid" else "Invalid") x.Item5))
+    ] |> Seq.map (fun ((a,b,c,d,e)) -> TestCaseData(a,b,c,d)
+                                        .SetName(sprintf "%s: %s" (if d then "Valid" else "Invalid") e))
 [<Test>]
 [<TestCaseSource(nameof(playableCardRulesCases))>]
-let playableCardRules(playedCards:Card list, card, restOfPlayerGame, expectedValid, _) =
+let playableCardRules(playedCards:Card list, card, restOfPlayerGame, expectedValid) =
     let state:Playing = {
         Players= [
             yield! playedCards |> Seq.mapi (fun i x -> Player.New i (string i) [||])
@@ -87,5 +90,7 @@ let playableCardRules(playedCards:Card list, card, restOfPlayerGame, expectedVal
             PlayedCards = playedCards |> List.rev // each played card is front-appended to the list, so reverse it
             StartingPlayer = 0
         }
+        AttackerTricks = []
+        DefenderTricks = []
     }
     Assert.AreEqual(expectedValid, cardCanBePlayed state playedCards.Length 0)
