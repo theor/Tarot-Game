@@ -8,6 +8,7 @@ module App
 open Elmish
 open Elmish.Debug
 open Elmish.React
+open Fable.Core
 open Fable.React
 open Fable.React.Props
 open Fulma
@@ -32,7 +33,7 @@ let init (): Model * Cmd<Msg> =
         Players = players |> Seq.mapi (fun i x -> {Index=i;Name = "asd";Cards=x}) |> Seq.toArray
         Taker = 0
         Trick = { StartingPlayer=0; PlayedCards = [] }
-        AttackerTricks = []
+        AttackerTricks = dog |> List.ofArray
         DefenderTricks = []
     }, Cmd.none
 
@@ -42,7 +43,17 @@ let update (msg: Msg) (model: Model) =
     match model with
     | Playing playing ->
         match msg with
-        | EndRound -> Playing <| {playing with Trick = startTrick 0 },[]
+        | EndRound ->
+            let winnerIndex, winnerCards, loserCards = trickWinner playing
+            let attackerCards,defenderCards =
+                if winnerIndex = playing.TakerPlayer.Index
+                then winnerCards,loserCards
+                else loserCards,winnerCards
+            JS.console.log("winner", winnerIndex)
+            Playing <| {playing with
+                            Trick = startTrick 0
+                            AttackerTricks = attackerCards @ playing.AttackerTricks
+                            DefenderTricks = defenderCards @ playing.DefenderTricks },[]
         | PlayCard(p,ci) ->
             let m',playedCard = playCard playing p.Index ci
             let cmd = match getPlayingState m' with
@@ -94,12 +105,15 @@ let viewCard valid (onClick: (int -> unit) option) (cardIndex: int) (c: Card): R
     ]
 
 let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
-    let onClick = match state with
-                  | PlayingState.WaitForCard pi when pi = p.Index -> (Some (fun cardIndex -> dispatch <| PlayCard(p, cardIndex) ))
-                  | _ -> None
+    let onClick valid = match valid,state with
+                  | true,PlayingState.WaitForCard pi when pi = p.Index -> (Some (fun cardIndex -> dispatch <| PlayCard(p, cardIndex) ))
+                  | _,_ -> None
     div [] [
         Text.div [] [ str <| sprintf "Player %i:" p.Index ]
-        div [Class "player-cards"] (p.Cards |> Seq.mapi (fun i c -> viewCard (cardCanBePlayed playing p.Index i) onClick i c))
+        let mapCard i c =
+            let valid = (cardCanBePlayed playing p.Index i)
+            viewCard valid (onClick valid) i c
+        div [Class "player-cards"] (p.Cards |> Seq.mapi mapCard)
     ]
 
 let view (model: Model) dispatch =
@@ -111,6 +125,11 @@ let view (model: Model) dispatch =
                 yield div [Class "player-cards"] (p.Trick.PlayedCards |> Seq.rev |> Seq.mapi (viewCard false None))
                 yield Text.span [] [str <| sprintf "State: %O" state]
                 yield! p.Players |> Seq.map (viewPlayerGame dispatch p state)
+                yield Text.p [] [str "Att"]
+                yield div [Class "player-cards"] (p.AttackerTricks |> Seq.mapi (viewCard false None))
+                yield Text.p [] [str "Def"]
+                yield div [Class "player-cards"] (p.DefenderTricks |> Seq.mapi (viewCard false None))
+
             | _ -> failwithf "invalid state %O" model
 //            div [] (game |> Seq.map (viewCard dispatch))
         ]

@@ -68,7 +68,32 @@ let cardCanBePlayed (state:Playing) pi ci =
                      | Suit _ ->  p.Cards |> Seq.forall (not << isTrump)
         | Suit (_,s) -> match card with
                         | Trump t -> t = 0 || p.Cards |> (not << Seq.exists (isSuitOf s)) && (t > max || p.Cards |> Seq.forall (not << isTrumpGreaterThan max))
-                        | Suit (_, ps) -> ps = s || p.Cards |> (not << Seq.exists (isSuitOf s))
+                        | Suit (_, ps) -> ps = s || p.Cards |>  (not << Seq.exists (fun c -> isSuitOf s c || isTrump c))
+let trickWinner (state:Playing): int * Card list * Card list =
+    // TODO excuse+grand chelem = winning trick
+    let reved = state.Trick.PlayedCards |> List.rev
+    let first =
+        if List.head reved = Card.Excuse
+        then reved |> List.skip 1 |> List.head
+        else List.head reved
+    // give a value to cards. trump = bonus 100, right suit = card value, wrong suit/excuse = 0
+    let relValue startingSuit c =
+        match c with
+        | Trump 0 -> 0
+        | Trump t -> 100 + t
+        | Suit(i,s) when Some(s) = startingSuit -> i
+        | _ -> 0
+    let winningPlayerIndex =
+        match first with
+        | Trump _ -> reved |> Seq.indexed |> Seq.maxBy (snd >> relValue None) |> fst
+        | Suit(_,ss) -> reved |> Seq.indexed |> Seq.maxBy (snd >> relValue (Some ss)) |> fst
+    let winningPlayerIndex = (winningPlayerIndex + state.Trick.StartingPlayer) % state.Players.Length
+    let winnerIsAttacker = state.TakerPlayer.Index = winningPlayerIndex
+    // this assumes the excuse has been played by the loser
+    let loserMustCompensateExcuse = winnerIsAttacker && reved |> List.exists ((=) Card.Excuse)
+    let winnerCards = if loserMustCompensateExcuse then reved |> List.filter ((<>) Card.Excuse) else reved
+    let loserCards = if loserMustCompensateExcuse then [Card.Excuse] else []
+    winningPlayerIndex, winnerCards, loserCards
 type PlayingState =
     | WaitForCard of int
     | EndRound
