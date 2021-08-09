@@ -75,6 +75,7 @@ let playableCardRulesCases() =
         yield [Suit(1,Diamonds)], Card.Excuse, [Suit(2,Diamonds)],true,"Excuse on suit when suit left"
         yield [Card.Excuse], Trump 2, [Suit(2,Diamonds)],true,"Trump on Excuse first"
         yield [Card.Excuse], Suit(2,Diamonds), [Trump 2],true,"Suit on Excuse first"
+        yield [Suit(1,Heart)], Suit(2,Diamonds), [Trump 2],false,"Wrong suit when trump left"
     ] |> Seq.map (fun ((a,b,c,d,e)) -> TestCaseData(a,b,c,d)
                                         .SetName(sprintf "%s: %s" (if d then "Valid" else "Invalid") e))
 [<Test>]
@@ -94,3 +95,36 @@ let playableCardRules(playedCards:Card list, card, restOfPlayerGame, expectedVal
         DefenderTricks = []
     }
     Assert.AreEqual(expectedValid, cardCanBePlayed state playedCards.Length 0)
+
+let winnerCases() =
+    [
+        for starting in 0..3 do
+            yield [Trump 1; Trump 21; Trump 2; Trump 3], 1, 4, 0, "Trump wins",starting
+            yield [Trump 1; Trump 21; Card.Excuse; Trump 3], 1, 4, 0, "Trump wins, Excuse in team",starting
+            yield [Trump 21; Trump 1; Card.Excuse; Trump 3], 0, 3, 1, "Trump wins, owned a card",starting
+    ]
+    |> Seq.map (fun ((cards,winner,winCount,loseCount,name,starting)) ->
+          let winner = (winner+starting)%cards.Length
+          TestCaseData(cards,winner, winCount, loseCount, starting)
+            .SetName(sprintf "%s - first %i winner %i" name starting winner))
+[<Test>]
+[<TestCaseSource(nameof(winnerCases))>]
+let winningCardRules(playedCards:Card list, expectedIndex, winnerCardCount, loserCardCount, startingPlayer) =
+    let state:Playing = {
+        Players= [
+            yield! playedCards |> Seq.mapi (fun i x -> Player.New i (string i) [||])
+        ]  |> Seq.toArray
+        Taker = startingPlayer
+        Trick= {
+            PlayedCards = playedCards |> List.rev // each played card is front-appended to the list, so reverse it
+            StartingPlayer = startingPlayer
+        }
+        AttackerTricks = []
+        DefenderTricks = []
+    }
+    let winnerIndex, winnerCards, loserCards = trickWinner state
+    Assert.AreEqual(expectedIndex, winnerIndex)
+    Assert.AreEqual(winnerCardCount, winnerCards.Length)
+    Assert.AreEqual(loserCardCount, loserCards.Length)
+    Assert.IsTrue(winnerCards.Length > loserCards.Length)
+    Assert.AreEqual(playedCards.Length, winnerCards.Length + loserCards.Length)

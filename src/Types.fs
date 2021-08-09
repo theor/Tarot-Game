@@ -63,9 +63,10 @@ let sortCard c =
     | Suit(i,Suit.Spades) -> 500 + i
 let deal (n: int): Card [] * Card [] [] =
     let dogCount = dogFor n in
-    let shuffled = game |> Seq.shuffleSeeded 43UL |> Seq.toArray
+    let shuffled = game |> Seq.shuffleSeeded 42UL |> Seq.toArray
     printfn "%A" shuffled
     let dog = shuffled |> Seq.take dogCount |> Seq.toArray
+    printfn "%A" dog
     let players = shuffled |> Seq.skip dogCount |> Seq.splitInto n |> Seq.map (Seq.sortBy sortCard >> Seq.toArray) |> Seq.toArray
     (dog, players)
 
