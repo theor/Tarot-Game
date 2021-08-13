@@ -9,15 +9,22 @@ open Elmish
 open Elmish.Debug
 open Elmish.React
 open Fable.Core
+open Fable.Import.Animejs
+open Fable.Import
 open Fable.React
 open Fable.React.Props
 open Fulma
-open Tarot
 open Tarot.Ext
 open Tarot.Game
 open Elmish.HMR
 open Fable.Core.JsInterop
 importAll "../sass/main.sass"
+//let catpng:string = import "*" "../public/css_sprites.png"
+//JS.console.log(catpng)
+
+//importAll "../node_modules/pixi.js/dist/cjs/pixi.js"
+ 
+//import
 
 // MODEL
 
@@ -26,6 +33,19 @@ type Model = GameState
 type Msg =
     | PlayCard of Player * int
     | EndRound
+
+let size = ref (900., 500.)
+
+//        anime.Invoke (jsOptions<AnimInput> (fun x ->
+//            x.targets <- !!sprite
+//            x.duration <- !!1000.
+//            x.Item("x") <- x'
+//            x.Item("y") <- y'
+//            x.Item("angle") <- !!(0.,360.)
+//            x.easing <- !!"easeOutQuad"
+////            x.rotate <- !!jsOptions<PropertyParameters> (fun (r:PropertyParameters) ->
+////                                                            r.value <- !!360.
+////                                                            r.duration <- !!2000.)
 
 let init (): Model * Cmd<Msg> =
     let dog, players = Tarot.Types.deal 4 in
@@ -38,6 +58,12 @@ let init (): Model * Cmd<Msg> =
     }, Cmd.none
 
 // UPDATE
+
+let animeCmd msg (x:AnimInput): Cmd<Msg> =
+    Cmd.ofSub (fun dispatch ->
+        x.complete <- fun a -> dispatch msg
+        anime.Invoke x |> ignore
+        )
 
 let update (msg: Msg) (model: Model) =
     match model with
@@ -115,12 +141,22 @@ let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
             viewCard valid (onClick valid) i c
         div [Class "player-cards"] (p.Cards |> Seq.mapi mapCard)
     ]
+    
+//let mutable ctx =
+//    let c = (Browser.Dom.document.getElementById "canvas":?> HTMLCanvasElement)
+//    c.getContext_2d()
+//
+let renderCanvas p =
+    ()
+//    ctx.fillStyle <- !^"rgb(200,0,0)"
+//    ctx.fillRect(10., 10., 50., 50.)
 
 let view (model: Model) dispatch =
     Section.section [][
         Container.container[Container.IsFullHD] [
             match model with
             | GameState.Playing p ->
+                renderCanvas p
                 let state = getPlayingState p
                 yield div [Class "player-cards"] (p.Trick.PlayedCards |> Seq.rev |> Seq.mapi (viewCard false None))
                 yield Text.span [] [str <| sprintf "State: %O" state]
@@ -142,9 +178,17 @@ let view (model: Model) dispatch =
 //        viewCard (Card.Trump 1) dispatch
 //      ]
 
+//let rec tick dispatch time =
+//    JS.console.log(time)
+//    Browser.Dom.window.requestAnimationFrame(tick dispatch) |> ignore
+//    ()
+
 // App
 Program.mkProgram init update view
 |> Program.withReactSynchronous "elmish-app"
+//|> Program.withSubscription (fun m -> Cmd.ofSub (fun dispatch ->
+//    (Browser.Dom.document.getElementById "canvas").addEventListener("mousemove", fun e -> JS.console.log e)
+//    Browser.Dom.window.requestAnimationFrame(tick dispatch) |> ignore))
 #if DEBUG
 |> Program.withDebugger
 #endif
