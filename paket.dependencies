@@ -1,5 +1,6 @@
 source https://api.nuget.org/v3/index.json
 
+nuget Fable.Browser.Svg
 nuget Fable.Elmish.HMR
 nuget FSharp.Core
 nuget Fable.Core 3.2.8

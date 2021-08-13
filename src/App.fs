@@ -5,10 +5,15 @@ module App
  You can find more info about Elmish architecture and samples at https://elmish.github.io/
 *)
 
+open Browser.Types
 open Elmish
 open Elmish.Debug
 open Elmish.React
+open Fable
 open Fable.Core
+//open Fable.Import
+open Fable.Pixi
+open Fable.Import
 open Fable.React
 open Fable.React.Props
 open Fulma
@@ -18,6 +23,12 @@ open Tarot.Game
 open Elmish.HMR
 open Fable.Core.JsInterop
 importAll "../sass/main.sass"
+//let catpng:string = import "*" "../public/css_sprites.png"
+//JS.console.log(catpng)
+
+//importAll "../node_modules/pixi.js/dist/cjs/pixi.js"
+ 
+//import
 
 // MODEL
 
@@ -26,6 +37,35 @@ type Model = GameState
 type Msg =
     | PlayCard of Player * int
     | EndRound
+
+let options = jsOptions<PIXI.ApplicationStaticOptions>(fun x ->
+    x.width <- Some 900.
+    x.height <- Some 500.
+    x.backgroundColor <- Some 0x000000
+)
+JS.console.log(Pixi.PIXI.pixi)
+ 
+let old =
+    let l = Browser.Dom.document.getElementsByTagName "canvas"
+    let n = l.[0]
+    if not <| JsInterop.isNullOrUndefined n then
+        ignore <| Browser.Dom.document.removeChild n
+        
+let app = PIXI.pixi.Application.Create(options)
+JS.console.log(app.loader)
+Browser.Dom.document.body.appendChild(app.view) |> ignore
+let onLoaded () =
+    app.start()
+    let sprite = PIXI.pixi.Sprite.Create(
+        app.loader.resources.["css_sprites.png"].texture
+      )
+    sprite.position <- !^PIXI.pixi.Point.Create(40., 20.) 
+    app.stage.addChild(sprite)
+    ()
+app.loader.add("css_sprites.png","css_sprites.png").load(onLoaded) |> ignore
+//let loader = PIXI.loaders.Loader.Create()
+//loader.load(onLoaded) |> ignore
+
 
 let init (): Model * Cmd<Msg> =
     let dog, players = Tarot.Types.deal 4 in
@@ -115,12 +155,22 @@ let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
             viewCard valid (onClick valid) i c
         div [Class "player-cards"] (p.Cards |> Seq.mapi mapCard)
     ]
+    
+//let mutable ctx =
+//    let c = (Browser.Dom.document.getElementById "canvas":?> HTMLCanvasElement)
+//    c.getContext_2d()
+//
+let renderCanvas p =
+    ()
+//    ctx.fillStyle <- !^"rgb(200,0,0)"
+//    ctx.fillRect(10., 10., 50., 50.)
 
 let view (model: Model) dispatch =
     Section.section [][
         Container.container[Container.IsFullHD] [
             match model with
             | GameState.Playing p ->
+                renderCanvas p
                 let state = getPlayingState p
                 yield div [Class "player-cards"] (p.Trick.PlayedCards |> Seq.rev |> Seq.mapi (viewCard false None))
                 yield Text.span [] [str <| sprintf "State: %O" state]
@@ -142,9 +192,17 @@ let view (model: Model) dispatch =
 //        viewCard (Card.Trump 1) dispatch
 //      ]
 
+//let rec tick dispatch time =
+//    JS.console.log(time)
+//    Browser.Dom.window.requestAnimationFrame(tick dispatch) |> ignore
+//    ()
+
 // App
 Program.mkProgram init update view
 |> Program.withReactSynchronous "elmish-app"
+//|> Program.withSubscription (fun m -> Cmd.ofSub (fun dispatch ->
+//    (Browser.Dom.document.getElementById "canvas").addEventListener("mousemove", fun e -> JS.console.log e)
+//    Browser.Dom.window.requestAnimationFrame(tick dispatch) |> ignore))
 #if DEBUG
 |> Program.withDebugger
 #endif
