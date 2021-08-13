@@ -9,10 +9,38 @@ $fa-font-path: "./../node_modules/@fortawesome/fontawesome-free/webfonts/"
 
 $sprite: "../public/css_sprites.png"
 
+.container
+    display: grid
+    grid-template-columns: repeat(3, 1fr)
+//   grid-auto-rows: 100px
+
 canvas
     border: solid 1px red
 
-.player-cards
+.player-bottom
+    grid-column: 2
+    grid-row: 3
+.player-top
+    grid-column: 2
+    grid-row: 1
+.player-left
+    grid-column: 1
+    grid-row: 2
+.player-right
+    grid-column: 3
+    grid-row: 2
+.playing-area
+    grid-column: 2
+    grid-row: 2
+.attack-tricks
+    grid-row:4
+.defense-tricks
+    grid-row:4
+
+.game-open
+    & > span
+        position: absolute
+        bottom:0px
     border: 1px solid cyan
     position: relative
     height: 200px
@@ -40,7 +68,7 @@ canvas
     // margin: 0em 0 0 0
     &.valid
         border: 1px solid green
-        margin-top: -40px
+        // margin-top: -40px
         &:hover
             border: 1px solid cyan
     &.invalid

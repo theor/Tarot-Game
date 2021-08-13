@@ -132,15 +132,17 @@ let viewCard valid (onClick: (int -> unit) option) (cardIndex: int) (c: Card): R
 
 let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
     let onClick valid = match valid,state with
-                  | true,PlayingState.WaitForCard pi when pi = p.Index -> (Some (fun cardIndex -> dispatch <| PlayCard(p, cardIndex) ))
-                  | _,_ -> None
-    div [] [
-        Text.div [] [ str <| sprintf "Player %i:" p.Index ]
-        let mapCard i c =
-            let valid = (cardCanBePlayed playing p.Index i)
-            viewCard valid (onClick valid) i c
-        div [Class "player-cards"] (p.Cards |> Seq.mapi mapCard)
-    ]
+                          | true,PlayingState.WaitForCard pi when pi = p.Index -> (Some (fun cardIndex -> dispatch <| PlayCard(p, cardIndex) ))
+                          | _,_ -> None
+        
+    let mapCard i c =
+        let valid = (cardCanBePlayed playing p.Index i)
+        viewCard valid (onClick valid) i c
+    let side = (match p.Index with | 0 -> "bottom" | 1 -> "right" | 2 -> "top" | _ -> "left")
+    div [Class <| $"game-open player-%s{side}"] [
+            yield Text.span [] [ str <| $"Player %i{p.Index}:" ]
+            yield! (p.Cards |> Seq.mapi mapCard)
+        ]
     
 //let mutable ctx =
 //    let c = (Browser.Dom.document.getElementById "canvas":?> HTMLCanvasElement)
@@ -158,13 +160,20 @@ let view (model: Model) dispatch =
             | GameState.Playing p ->
                 renderCanvas p
                 let state = getPlayingState p
-                yield div [Class "player-cards"] (p.Trick.PlayedCards |> Seq.rev |> Seq.mapi (viewCard false None))
-                yield Text.span [] [str <| sprintf "State: %O" state]
+                yield div [classList ["game-open",true; "playing-area",true]] [
+                    yield Text.span [] [str <| sprintf "State: %O" state]
+
+                    yield! (p.Trick.PlayedCards |> Seq.rev |> Seq.mapi (viewCard false None))
+                    ]
                 yield! p.Players |> Seq.map (viewPlayerGame dispatch p state)
-                yield Text.p [] [str "Att"]
-                yield div [Class "player-cards"] (p.AttackerTricks |> Seq.mapi (viewCard false None))
-                yield Text.p [] [str "Def"]
-                yield div [Class "player-cards"] (p.DefenderTricks |> Seq.mapi (viewCard false None))
+                yield div [Class "game-open attack-tricks"] [
+                    yield Text.span [] [str "Att"]
+                    yield! (p.AttackerTricks |> Seq.mapi (viewCard false None))
+                    ]
+                yield div [Class "game-open defense-tricks"] [
+                    yield Text.span [] [str "Def"]
+                    yield! (p.DefenderTricks |> Seq.mapi (viewCard false None))
+                    ]
 
             | _ -> failwithf "invalid state %O" model
 //            div [] (game |> Seq.map (viewCard dispatch))
