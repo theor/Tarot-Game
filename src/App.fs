@@ -11,6 +11,7 @@ open Elmish.Debug
 open Elmish.React
 open Fable
 open Fable.Core
+open Fable.Import.Animejs
 //open Fable.Import
 open Fable.Pixi
 open Fable.Import
@@ -38,31 +39,57 @@ type Msg =
     | PlayCard of Player * int
     | EndRound
 
+let size = ref (900., 500.)
 let options = jsOptions<PIXI.ApplicationStaticOptions>(fun x ->
-    x.width <- Some 900.
-    x.height <- Some 500.
-    x.backgroundColor <- Some 0x000000
+    x.width <- Some (fst !size)
+    x.height <- Some (snd !size)
+    x.backgroundColor <- Some 0xcccccc
 )
-JS.console.log(Pixi.PIXI.pixi)
+//JS.console.log(Pixi.PIXI.pixi)
  
-let old =
-    let l = Browser.Dom.document.getElementsByTagName "canvas"
-    let n = l.[0]
+let l = Browser.Dom.document.getElementsByTagName "canvas"
+for i in 0..l.length - 1 do
+    let n = l.[i]
     if not <| JsInterop.isNullOrUndefined n then
-        ignore <| Browser.Dom.document.removeChild n
+        try
+            ignore <| Browser.Dom.document.removeChild n
+        with
+        | e -> JS.console.error(e)
         
 let app = PIXI.pixi.Application.Create(options)
-JS.console.log(app.loader)
+//JS.console.log(app.loader)
 Browser.Dom.document.body.appendChild(app.view) |> ignore
 let onLoaded () =
     app.start()
-    let sprite = PIXI.pixi.Sprite.Create(
-        app.loader.resources.["css_sprites.png"].texture
-      )
-    sprite.position <- !^PIXI.pixi.Point.Create(40., 20.) 
-    app.stage.addChild(sprite)
+    let sheet = app.loader.resources.["cards.json"]
+//    JS.console.log(sheet)
+    let sheet = sheet.spritesheet |> Option.get
+    let sheet = sheet.textures |> Option.get
+//    JS.console.log(app.loader) 
+    let mutable sprite = PIXI.pixi.Sprite.Create(
+                            sheet.["1.jpg"])
+    sprite.interactive <- true
+    sprite.anchor <- !!PIXI.pixi.Point.Create(0.5, 0.5) 
+    sprite.on("mousedown", fun () ->
+        JS.console.log("clicked", sprite, anime)
+        let x',y' = anime.random(0., (fst !size) - 0.5*sprite.width),
+                    anime.random(0., (snd !size) - 0.5*sprite.height)
+        anime.Invoke (jsOptions<AnimInput> (fun x ->
+            x.targets <- !!sprite
+            x.duration <- !!1000.
+            x.Item("x") <- x'
+            x.Item("y") <- y'
+            x.Item("angle") <- !!(0.,360.)
+            x.easing <- !!"easeOutQuad"
+//            x.rotate <- !!jsOptions<PropertyParameters> (fun (r:PropertyParameters) ->
+//                                                            r.value <- !!360.
+//                                                            r.duration <- !!2000.)
+            )) |> ignore
+        ) |> ignore
+    sprite.position <- !^PIXI.pixi.Point.Create(sprite.width*0.5, sprite.height*0.5) 
+    app.stage.addChild(sprite) |> ignore
     ()
-app.loader.add("css_sprites.png","css_sprites.png").load(onLoaded) |> ignore
+app.loader.add(U3.Case1 "cards.json").load(onLoaded) |> ignore
 //let loader = PIXI.loaders.Loader.Create()
 //loader.load(onLoaded) |> ignore
 
@@ -78,6 +105,12 @@ let init (): Model * Cmd<Msg> =
     }, Cmd.none
 
 // UPDATE
+
+let animeCmd msg (x:AnimInput): Cmd<Msg> =
+    Cmd.ofSub (fun dispatch ->
+        x.complete <- fun a -> dispatch msg
+        anime.Invoke x |> ignore
+        )
 
 let update (msg: Msg) (model: Model) =
     match model with

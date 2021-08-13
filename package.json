@@ -6,6 +6,7 @@
     "build": "dotnet fable src -s && parcel build src/index.html"
   },
   "dependencies": {
+    "animejs": "^3.2.1",
     "bulma": "0.9.3",
     "bulma-calendar": "0.1.7",
     "pixi.js": "^6.1.1",

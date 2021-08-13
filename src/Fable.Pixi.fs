@@ -9841,6 +9841,8 @@ module PIXI =
     type [<AllowNullLiteral>] TilingSpriteRendererStatic =
         [<Emit "new $0($1...)">] abstract Create: renderer: PIXI.Renderer -> TilingSpriteRenderer
 
+    type SpritesheetTextures =
+        [<Emit "$0[$1]{{=$2}}">] abstract Item: string -> Texture with get
     /// Utility class for maintaining reference to a collection
     /// of Textures on a single Spritesheet.
     /// 
@@ -9868,7 +9870,7 @@ module PIXI =
         /// ```js
         /// new PIXI.Sprite(sheet.textures["image.png"]);
         /// ```
-        abstract textures: obj option with get, set
+        abstract textures: SpritesheetTextures option with get, set
         /// A map containing the textures for each animation.
         /// Can be used to create an {@link PIXI.AnimatedSprite|AnimatedSprite}:
         /// ```js

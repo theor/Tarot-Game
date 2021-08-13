@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Fable.Pixi.fs" />
+    <Compile Include="FableImport.Animejs.fs" />
     <Compile Include="MersenneTwister.fs" />
     <Compile Include="Ext.fs" />
     <Compile Include="Types.fs" />

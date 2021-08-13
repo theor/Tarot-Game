@@ -1583,6 +1583,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"animejs@npm:^3.2.1":
+  version: 3.2.1
+  resolution: "animejs@npm:3.2.1"
+  checksum: 6939171bed17d6b28307747e564d33e93312c26169b98498c833117d86f174ce7a318469bfd81716c223860a6d13bd76b761e79e765b86b2a2f851963caaa851
+  languageName: node
+  linkType: hard
+
 "ansi-html@npm:^0.0.7":
   version: 0.0.7
   resolution: "ansi-html@npm:0.0.7"
@@ -6822,6 +6829,7 @@ fsevents@~2.3.2:
     "@fortawesome/fontawesome-free": ^5.15.4
     "@parcel/transformer-image": 2.0.0-rc.0
     "@parcel/transformer-sass": 2.0.0-rc.0
+    animejs: ^3.2.1
     bulma: 0.9.3
     bulma-calendar: 0.1.7
     parcel: ^2.0.0-rc.0
