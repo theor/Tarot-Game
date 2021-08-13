@@ -7,7 +7,6 @@ open System
 open Fable.Core
 open Fable.Core.JS
 open Fable.Import.Browser
-open Fable.Import.JS
 
 type target =
     obj
