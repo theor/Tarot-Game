@@ -8,7 +8,9 @@
     <Compile Include="MersenneTwister.fs" />
     <Compile Include="Ext.fs" />
     <Compile Include="Types.fs" />
-    <Compile Include="Game.fs" />
+    <Compile Include="Tarot\Types.fs" />
+    <Compile Include="Tarot\Game.fs" />
+    <Compile Include="Tarot\View.fs" />
     <Compile Include="App.fs" />
     <Content Include="paket.references" />
     <Content Include="..\sass\main.sass">
