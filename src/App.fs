@@ -1,10 +1,5 @@
 module App
 
-(**
- The famous Increment/Decrement ported from Elm.
- You can find more info about Elmish architecture and samples at https://elmish.github.io/
-*)
-
 open Elmish
 open Elmish.Debug
 open Elmish.React
@@ -19,12 +14,6 @@ open Tarot.Game
 open Elmish.HMR
 open Fable.Core.JsInterop
 importAll "../sass/main.sass"
-//let catpng:string = import "*" "../public/css_sprites.png"
-//JS.console.log(catpng)
-
-//importAll "../node_modules/pixi.js/dist/cjs/pixi.js"
-
-//import
 
 // MODEL
 
@@ -37,17 +26,6 @@ type Msg =
 
 let size = ref {| x=Browser.Dom.window.innerWidth; y=Browser.Dom.window.innerHeight|}
 JS.console.log("win size", !size)
-//        anime.Invoke (jsOptions<AnimInput> (fun x ->
-//            x.targets <- !!sprite
-//            x.duration <- !!1000.
-//            x.Item("x") <- x'
-//            x.Item("y") <- y'
-//            x.Item("angle") <- !!(0.,360.)
-//            x.easing <- !!"easeOutQuad"
-////            x.rotate <- !!jsOptions<PropertyParameters> (fun (r:PropertyParameters) ->
-////                                                            r.value <- !!360.
-////                                                            r.duration <- !!2000.)
-
 let init (): Model * Cmd<Msg> =
     let dog, players = Tarot.Types.deal 4 in
     GameState.Playing {
@@ -105,15 +83,12 @@ let update (msg: Msg) (model: Model) =
             Playing m', cmd
         | _ -> failwithf "Action %A not implemented for state %A" msg model
     | _ -> failwithf "Model %A Action %A not implemented" model msg
-//    | Increment -> model + 1
-//    | Decrement -> model - 1
 
 // VIEW (rendered with React)
 
 open Tarot.Types
 
 let CardBack = 0x1F0A0
-let cardSize = {|x = 148.; y=272. |}
 
 let cardSymbol (c: Card) =
     let uni =
@@ -147,6 +122,7 @@ let viewCard (getPos: int -> float*float) valid (onClick: (int -> unit) option) 
               | None -> () ] [ ]
     ]
 
+let cardSize = {|x = 148.; y=272. |}
 let spaceX = 30.;
 let spaceY = 30.
 let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
@@ -167,25 +143,9 @@ let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
         yield! (p.Cards |> Seq.mapi mapCard)
     ]
 
-
-//let mutable ctx =
-//    let c = (Browser.Dom.document.getElementById "canvas":?> HTMLCanvasElement)
-//    c.getContext_2d()
-//
-let renderCanvas p =
-    ()
-//    ctx.fillStyle <- !^"rgb(200,0,0)"
-//    ctx.fillRect(10., 10., 50., 50.)
-
 let view (model: Model) dispatch =
-//    Section.section [ Section.Option.Props [
-//        Ref (fun elt -> dispatch <| GetSize(Browser.Dom.window.innerWidth,Browser.Dom.window.innerHeight)) // GetSize(r.width,r.height))
-//    ] ] [
-
-//        Container.container[Container.IsFullHD] [
         match model with
         | GameState.Playing p ->
-            renderCanvas p
             let state = getPlayingState p
 
             div [Class "playing-area"] [
@@ -204,28 +164,10 @@ let view (model: Model) dispatch =
 //                    ]
 
         | _ -> failwithf "invalid state %O" model
-//            div [] (game |> Seq.map (viewCard dispatch))
-//        ]
-//    ]
-//  div []
-//      [ button [ OnClick (fun _ -> dispatch Increment) ] [ str "+" ]
-//        div [] [ str (string model) ]
-//        button [ OnClick (fun _ -> dispatch Decrement) ] [ str "-" ]
-//        viewCard (Card.Suit (1, Heart)) dispatch
-//        viewCard (Card.Trump 1) dispatch
-//      ]
-
-//let rec tick dispatch time =
-//    JS.console.log(time)
-//    Browser.Dom.window.requestAnimationFrame(tick dispatch) |> ignore
-//    ()
 
 // App
 Program.mkProgram init update view
 |> Program.withReactSynchronous "elmish-app"
-//|> Program.withSubscription (fun m -> Cmd.ofSub (fun dispatch ->
-//    (Browser.Dom.document.getElementById "canvas").addEventListener("mousemove", fun e -> JS.console.log e)
-//    Browser.Dom.window.requestAnimationFrame(tick dispatch) |> ignore))
 #if DEBUG
 |> Program.withDebugger
 #endif
