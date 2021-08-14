@@ -11,6 +11,9 @@
     <Compile Include="Game.fs" />
     <Compile Include="App.fs" />
     <Content Include="paket.references" />
+    <Content Include="..\sass\main.sass">
+      <Link>main.sass</Link>
+    </Content>
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>

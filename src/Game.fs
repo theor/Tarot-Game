@@ -36,14 +36,14 @@ type Game = {
 let playCard (state:Playing) pi i =
     let card = state.Players.[pi].Cards.[i]
     let p = { state.Players.[pi] with
-                Cards = state.Players.[pi].Cards |>  Seq.removeIndex i |> Seq.toArray
+                Cards = state.Players.[pi].Cards |> Seq.removeIndex i |> Seq.toArray
             }
     { state with Players = state.Players
                            |> Array.map (fun pp -> if pp.Index <> p.Index then pp else p )
                  Trick = { state.Trick with PlayedCards = card :: state.Trick.PlayedCards }
     }, card
 
-let isTrump c = match c  with
+let isTrump c = match c with
                 | Trump 0 -> false // excuse
                 | Trump _ -> true
                 | _ -> false

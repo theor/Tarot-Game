@@ -23,7 +23,7 @@ importAll "../sass/main.sass"
 //JS.console.log(catpng)
 
 //importAll "../node_modules/pixi.js/dist/cjs/pixi.js"
- 
+
 //import
 
 // MODEL
@@ -89,7 +89,14 @@ let update (msg: Msg) (model: Model) =
             let m',playedCard = playCard playing p.Index ci
             let cmd = match getPlayingState m' with
                       | PlayingState.EndRound ->
-                          model, animeCmd EndRound {|  |}
+
+                          []
+//                          animeCmd EndRound <|
+//                              jsOptions<AnimInput> (fun x ->
+//                                x.targets <- !!sprite
+//                                x.duration <- !!1000.
+//                                x.left <- !!0.
+//                              )
 //                            Cmd.OfAsync.perform (fun () -> async {
 //                                  do! Async.Sleep 1000
 //                                  return playedCard
@@ -151,7 +158,7 @@ let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
                                 | 1 -> (* right *) ((!size).x - cardSize.y, 0.),(0.,spaceY), Dir.Vertical
                                 | 2 -> (* top *) (2.*cardSize.x,0.),(spaceX,0.), Dir.Horizontal
                                 | _ -> (* left *) (cardSize.x / 2., 0.),(0.,spaceY), Dir.Vertical
-        
+
     let mapCard i c =
         let valid = (cardCanBePlayed playing p.Index i)
         viewCard (fun i -> sx + fx * (float i), sy + fy * (float i)) valid (onClick valid) dir i c
@@ -159,8 +166,8 @@ let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
         yield Text.span [] [ str <| $"Player %i{p.Index}:" ]
         yield! (p.Cards |> Seq.mapi mapCard)
     ]
-    
-    
+
+
 //let mutable ctx =
 //    let c = (Browser.Dom.document.getElementById "canvas":?> HTMLCanvasElement)
 //    c.getContext_2d()
@@ -174,7 +181,7 @@ let view (model: Model) dispatch =
 //    Section.section [ Section.Option.Props [
 //        Ref (fun elt -> dispatch <| GetSize(Browser.Dom.window.innerWidth,Browser.Dom.window.innerHeight)) // GetSize(r.width,r.height))
 //    ] ] [
-        
+
 //        Container.container[Container.IsFullHD] [
         match model with
         | GameState.Playing p ->
