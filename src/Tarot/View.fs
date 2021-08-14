@@ -3,6 +3,7 @@ module Tarot.View
 open Browser.Types
 open Fable.Core
 open Fable.Core.JsInterop
+open Fable.Import
 open Fable.Import.Animejs
 open Fable.React
 open Fable.React.Props
@@ -20,11 +21,15 @@ let trickCardPosition i =
     size.Value.x / 2. + float (i - 2) * spaceX - cardSize.x/2.,
     (size.Value.y - cardSize.y) / 2.
 
-let animeCmd dispatch msg (x:AnimInput) =
-    x.complete <- fun a -> dispatch msg
+let animeCmd (dispatch: Msg -> unit) (msg:Msg) (x:AnimInput) =
+    x.complete <- fun a -> JS.console.log("Done, dispatching " + msg.ToString(), a); dispatch msg
     anime.Invoke x |> ignore
+    
+    
+[<RequireQualifiedAccess>]
+type CardClass = Table | Player | Trick 
 
-let viewCard (getPos: int -> float*float) valid (onClick: (MouseEvent -> int -> unit) option) (dir:Dir) (cardIndex: int) (c: Card): ReactElement =
+let viewCard (cardClass:CardClass) (getPos: float*float) valid (onClick: (MouseEvent -> unit) option) (dir:Dir) (c: Card): ReactElement =
     let cl = match c with
                 | Trump i -> sprintf "card bg-%i" i
                 | Suit (i, Suit.Heart) -> sprintf "card bg-h%i" i
@@ -32,14 +37,13 @@ let viewCard (getPos: int -> float*float) valid (onClick: (MouseEvent -> int -> 
                 | Suit (i, Suit.Spades) -> sprintf "card bg-s%i" i
                 | Suit (i, Suit.Clubs) -> sprintf "card bg-c%i" i
 
-    let x,y = getPos cardIndex
-    div [ yield Class $"card-wrapper {dir.ToString().ToLowerInvariant()}"
+    let x,y = getPos
+    div [ yield Class $"card-wrapper {dir.ToString().ToLowerInvariant()} {cardClass.ToString().ToLowerInvariant()}"
           yield Style [ Top y; Left x ]
           yield Key cl
           match onClick with
-              | Some onClick -> yield OnClick (fun e -> onClick e cardIndex)
+              | Some onClick -> yield OnClick (fun e -> onClick e)
               | None -> ()
-//          yield Ref (fun e -> ())
           
         ] [
         div [ yield classList [cl,true; "card-playable", Option.isSome onClick; "valid", valid && Option.isSome onClick; "invalid", not valid && Option.isSome onClick]
@@ -48,11 +52,10 @@ let viewCard (getPos: int -> float*float) valid (onClick: (MouseEvent -> int -> 
 
     
 let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
-    let onClick valid =
+    let onClick cardIndex valid =
         match valid,state with
         | true,PlayingState.WaitForCard pi when pi = p.Index ->
-            Some (fun (e:MouseEvent) cardIndex ->
-                JS.console.log(e)
+            Some (fun (e:MouseEvent) ->
                 let targetPos = trickCardPosition playing.Trick.PlayedCards.Length
                 animeCmd dispatch (PlayCard(p, cardIndex))
                     <| jsOptions<AnimInput>(fun x ->
@@ -67,7 +70,6 @@ let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
                                 x.Item("left") <- !!(fst targetPos)
                                 x.Item("top") <- !!(snd targetPos)
                                 )
-//                dispatch <| PlayCard(p, cardIndex) ))
             )
         | _,_ -> None
     let (sx,sy), (fx,fy), dir = match p.Index with
@@ -78,30 +80,46 @@ let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
 
     let mapCard i c =
         let valid = (cardCanBePlayed playing p.Index i)
-        viewCard (fun i -> sx + fx * (float i), sy + fy * (float i)) valid (onClick valid) dir i c
+        viewCard CardClass.Player (sx + fx * (float i), sy + fy * (float i)) valid (onClick i valid) dir c
     [
         yield Text.span [] [ str <| $"Player %i{p.Index}:" ]
         yield! (p.Cards |> Seq.mapi mapCard)
     ]
 
+let refHook dispatch elt =
+    // called twice, first time with null, see https://github.com/facebook/react/issues/9328
+    if isNullOrUndefined elt then ()
+    else
+        JS.console.log("ref START ANIM")
+        animeCmd dispatch EndRound
+        <| jsOptions<Animejs.AnimInput>(fun x ->
+                x.targets <- !!".table" 
+                x.duration <- !!1000.
+                x.Item("left") <- !!(-cardSize.x)
+                )
 let view (model: Model) dispatch =
         match model with
         | GameState.Playing p ->
             let state = getPlayingState p
-
-            div [Class "playing-area"] [
+            let refCb = match getPlayingState p with
+                        | PlayingState.EndRound ->
+                              JS.console.log("ref HOOK ANIM")
+                              Some <| refHook dispatch
+                        | _ -> None
+                
+            div [yield Class "playing-area"; if Option.isSome refCb then yield refCb |> Option.get |> Ref] [
                 yield Text.span [] [str <| sprintf "State: %O" state]
-                yield! (p.Trick.PlayedCards |> Seq.rev |> Seq.mapi (viewCard trickCardPosition false None Dir.Horizontal))
+                yield! (p.Trick.PlayedCards |> Seq.rev |> Seq.mapi (fun i x -> viewCard CardClass.Table (trickCardPosition i) false None Dir.Horizontal x))
                 yield! p.Players |> Seq.collect (viewPlayerGame dispatch p state)
                 ]
 
 //                yield div [Class "game-open attack-tricks"] [
 //                    yield Text.span [] [str "Att"]
-//                    yield! (p.AttackerTricks |> Seq.mapi (viewCard (fun i -> (float i * spaceX, 600.)) false None Dir.Horizontal))
+//                    yield! (p.AttackerTricks |> Seq.mapi (viewCard CardClass.Trick (fun i -> (float i * spaceX, 600.)) false None Dir.Horizontal))
 //                    ]
 //                yield div [Class "game-open defense-tricks"] [
 //                    yield Text.span [] [str "Def"]
-//                    yield! (p.DefenderTricks |> Seq.mapi (viewCard (fun i -> (float i * spaceX, 800.)) false None Dir.Horizontal))
+//                    yield! (p.DefenderTricks |> Seq.mapi (viewCard CardClass.Trick (fun i -> (float i * spaceX, 800.)) false None Dir.Horizontal))
 //                    ]
 
         | _ -> failwithf "invalid state %O" model

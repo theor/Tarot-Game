@@ -52,14 +52,7 @@ let update (msg: Msg) (model: Model) =
                             DefenderTricks = defenderCards @ playing.DefenderTricks },[]
         | PlayCard(p,ci) ->
             let m',playedCard = playCard playing p.Index ci
-            let cmd = match getPlayingState m' with
-                      | PlayingState.EndRound ->
-                            Cmd.OfAsync.perform (fun () -> async {
-                                  do! Async.Sleep 1000
-                                  return playedCard
-                              }) () (fun _card -> EndRound)
-                      | _ -> []
-            Playing m', cmd
+            Playing m', []// cmd
         | _ -> failwithf "Action %A not implemented for state %A" msg model
     | _ -> failwithf "Model %A Action %A not implemented" model msg
 
