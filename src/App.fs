@@ -1,5 +1,6 @@
 module App
 
+open Browser.Types
 open Elmish
 open Elmish.Debug
 open Elmish.React
@@ -38,11 +39,9 @@ let init (): Model * Cmd<Msg> =
 
 // UPDATE
 
-let animeCmd msg (x:AnimInput): Cmd<Msg> =
-    Cmd.ofSub (fun dispatch ->
-        x.complete <- fun a -> dispatch msg
-        anime.Invoke x |> ignore
-        )
+let animeCmd dispatch msg (x:AnimInput) =
+    x.complete <- fun a -> dispatch msg
+    anime.Invoke x |> ignore
 
 let update (msg: Msg) (model: Model) =
     match model with
@@ -67,18 +66,10 @@ let update (msg: Msg) (model: Model) =
             let m',playedCard = playCard playing p.Index ci
             let cmd = match getPlayingState m' with
                       | PlayingState.EndRound ->
-
-                          []
-//                          animeCmd EndRound <|
-//                              jsOptions<AnimInput> (fun x ->
-//                                x.targets <- !!sprite
-//                                x.duration <- !!1000.
-//                                x.left <- !!0.
-//                              )
-//                            Cmd.OfAsync.perform (fun () -> async {
-//                                  do! Async.Sleep 1000
-//                                  return playedCard
-//                              }) () (fun _card -> EndRound)
+                            Cmd.OfAsync.perform (fun () -> async {
+                                  do! Async.Sleep 1000
+                                  return playedCard
+                              }) () (fun _card -> EndRound)
                       | _ -> []
             Playing m', cmd
         | _ -> failwithf "Action %A not implemented for state %A" msg model
@@ -106,7 +97,7 @@ let cardSymbol (c: Card) =
     Char.toUnicode (uni)
 
 type Dir = Horizontal | Vertical
-let viewCard (getPos: int -> float*float) valid (onClick: (int -> unit) option) (dir:Dir) (cardIndex: int) (c: Card): ReactElement =
+let viewCard (getPos: int -> float*float) valid (onClick: (MouseEvent -> int -> unit) option) (dir:Dir) (cardIndex: int) (c: Card): ReactElement =
     let cl = match c with
                 | Trump i -> sprintf "card bg-%i" i
                 | Suit (i, Suit.Heart) -> sprintf "card bg-h%i" i
@@ -115,20 +106,44 @@ let viewCard (getPos: int -> float*float) valid (onClick: (int -> unit) option) 
                 | Suit (i, Suit.Clubs) -> sprintf "card bg-c%i" i
 
     let x,y = getPos cardIndex
-    div [Class $"card-wrapper {dir.ToString().ToLowerInvariant()}"; Style [ Top y; Left x ]] [
+    div [ yield Class $"card-wrapper {dir.ToString().ToLowerInvariant()}"
+          yield Style [ Top y; Left x ]
+          yield Key cl
+          match onClick with
+              | Some onClick -> yield OnClick (fun e -> onClick e cardIndex)
+              | None -> ()
+//          yield Ref (fun e -> ())
+          
+        ] [
         div [ yield classList [cl,true; "card-playable", Option.isSome onClick; "valid", valid && Option.isSome onClick; "invalid", not valid && Option.isSome onClick]
-              match onClick with
-              | Some onClick -> yield OnClick (fun _ -> onClick cardIndex)
-              | None -> () ] [ ]
+            ] [ ]
     ]
 
 let cardSize = {|x = 148.; y=272. |}
 let spaceX = 30.;
 let spaceY = 30.
 let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
-    let onClick valid = match valid,state with
-                          | true,PlayingState.WaitForCard pi when pi = p.Index -> (Some (fun cardIndex -> dispatch <| PlayCard(p, cardIndex) ))
-                          | _,_ -> None
+    let onClick valid =
+        match valid,state with
+        | true,PlayingState.WaitForCard pi when pi = p.Index ->
+            Some (fun (e:MouseEvent) cardIndex ->
+                JS.console.log(e)
+                animeCmd dispatch (PlayCard(p, cardIndex))
+                    <| jsOptions<AnimInput>(fun x ->
+                                x.targets <- !!e.currentTarget
+                                x.easing <- !!Easing.EaseOutQuint
+//                                x.round <- !!true
+                                x.duration <- !!1200.
+                                x.rotate <- !!jsOptions<PropertyParameters>(fun p ->
+                                                                            p.value <- !!"1turn"// !!0.
+                                                                            p.easing <- !!Easing.EaseOutSine
+                                                                            p.duration <- !!1000)
+                                x.Item("left") <- !!(size.Value.x / 2. + float playing.Trick.PlayedCards.Length * spaceX)
+                                x.Item("top") <- !!(size.Value.y / 2.)
+                                )
+//                dispatch <| PlayCard(p, cardIndex) ))
+            )
+        | _,_ -> None
     let (sx,sy), (fx,fy), dir = match p.Index with
                                 | 0 -> (* bottom *) (2.*cardSize.x, (!size).y - cardSize.y),(spaceX,0.), Dir.Horizontal
                                 | 1 -> (* right *) ((!size).x - cardSize.y, 0.),(0.,spaceY), Dir.Vertical
