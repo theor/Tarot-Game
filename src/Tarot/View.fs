@@ -13,13 +13,21 @@ open Fulma
 
 type Dir = Horizontal | Vertical
 let size = ref {| x=Browser.Dom.window.innerWidth; y=Browser.Dom.window.innerHeight|}
+let ratio () = size.Value.y / size.Value.x
+let normalizedWidth = 1000.
+let normalizedHeight () = normalizedWidth * ratio()
+let zoomFactor () = size.Value.x / normalizedWidth
 //JS.console.log("win size", !size)
-let cardSize = {|x = 148.; y=272. |}
-let spaceX = 30.;
-let spaceY = 30.
+let cardRatio = 272. / 148.
+let actualCardWidth = 100.
+let cardSize = if size.Value.x < size.Value.y
+               then {|x = actualCardWidth; y=actualCardWidth*cardRatio |}
+               else {|x = actualCardWidth/cardRatio; y=actualCardWidth |}
+let spaceX = cardSize.x * 0.25
+let spaceY = spaceX
 let trickCardPosition i =
-    size.Value.x / 2. + float (i - 2) * spaceX - cardSize.x/2.,
-    (size.Value.y - cardSize.y) / 2.
+    normalizedWidth / 2. + float (i - 2) * spaceX - cardSize.x/2.,
+    normalizedHeight()
 
 let animeCmd (dispatch: Msg -> unit) (msg:Msg) (x:AnimInput) =
     x.complete <- fun a -> JS.console.log("Done, dispatching " + msg.ToString(), a); dispatch msg
@@ -31,11 +39,11 @@ type CardClass = Table | Player | Trick
 
 let viewCard (cardClass:CardClass) (getPos: float*float) valid (onClick: (MouseEvent -> unit) option) (dir:Dir) (c: Card): ReactElement =
     let cl = match c with
-                | Trump i -> sprintf "card bg-%i" i
-                | Suit (i, Suit.Heart) -> sprintf "card bg-h%i" i
-                | Suit (i, Suit.Diamonds) -> sprintf "card bg-d%i" i
-                | Suit (i, Suit.Spades) -> sprintf "card bg-s%i" i
-                | Suit (i, Suit.Clubs) -> sprintf "card bg-c%i" i
+                | Trump i -> sprintf "card card%i" i
+                | Suit (i, Suit.Heart) -> sprintf "card cardh%i" i
+                | Suit (i, Suit.Diamonds) -> sprintf "card cardd%i" i
+                | Suit (i, Suit.Spades) -> sprintf "card cards%i" i
+                | Suit (i, Suit.Clubs) -> sprintf "card cardc%i" i
 
     let x,y = getPos
     div [ yield Class $"card-wrapper {dir.ToString().ToLowerInvariant()} {cardClass.ToString().ToLowerInvariant()}"
@@ -46,8 +54,14 @@ let viewCard (cardClass:CardClass) (getPos: float*float) valid (onClick: (MouseE
               | None -> ()
           
         ] [
-        div [ yield classList [cl,true; "card-playable", Option.isSome onClick; "valid", valid && Option.isSome onClick; "invalid", not valid && Option.isSome onClick]
-            ] [ ]
+        div [ yield classList [ cl,true
+                                "card-playable", Option.isSome onClick
+                                "valid", valid && Option.isSome onClick
+                                "invalid", not valid && Option.isSome onClick ]
+              yield Style [ //BackgroundSize $"7500px"
+                            Width cardSize.x
+                            Height cardSize.y ] 
+        ] [ ]
     ]
 
     
@@ -73,8 +87,8 @@ let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
             )
         | _,_ -> None
     let (sx,sy), (fx,fy), dir = match p.Index with
-                                | 0 -> (* bottom *) (2.*cardSize.x, (!size).y - cardSize.y),(spaceX,0.), Dir.Horizontal
-                                | 1 -> (* right *) ((!size).x - cardSize.y, 0.),(0.,spaceY), Dir.Vertical
+                                | 0 -> (* bottom *) (2.*cardSize.x, normalizedHeight() - cardSize.y),(spaceX,0.), Dir.Horizontal
+                                | 1 -> (* right *) (normalizedWidth - cardSize.y,0.),(0.,spaceY), Dir.Vertical
                                 | 2 -> (* top *) (2.*cardSize.x,0.),(spaceX,0.), Dir.Horizontal
                                 | _ -> (* left *) (cardSize.x / 2., 0.),(0.,spaceY), Dir.Vertical
 
@@ -107,11 +121,19 @@ let view (model: Model) dispatch =
                               Some <| refHook dispatch
                         | _ -> None
                 
-            div [yield Class "playing-area"; if Option.isSome refCb then yield refCb |> Option.get |> Ref] [
+            div [ yield Class "playing-area"
+                  if Option.isSome refCb then yield refCb |> Option.get |> Ref
+                  yield Style [ Width <| !!(normalizedWidth - 20.)
+                                Height <| !!(normalizedHeight())
+                                Zoom (zoomFactor())  ]
+            ] [
                 yield Text.span [] [str <| sprintf "State: %O" state]
-                yield! (p.Trick.PlayedCards |> Seq.rev |> Seq.mapi (fun i x -> viewCard CardClass.Table (trickCardPosition i) false None Dir.Horizontal x))
+                yield! p.Trick.PlayedCards
+                       |> Seq.rev
+                       |> Seq.mapi (fun i x ->
+                                                viewCard CardClass.Table (trickCardPosition i) false None Dir.Horizontal x)
                 yield! p.Players |> Seq.collect (viewPlayerGame dispatch p state)
-                ]
+            ]
 
 //                yield div [Class "game-open attack-tricks"] [
 //                    yield Text.span [] [str "Att"]
