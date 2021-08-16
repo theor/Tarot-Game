@@ -124,3 +124,13 @@ let getPlayingState (s:Playing): PlayingState =
     | _ -> let nextPlayer = s.Trick.StartingPlayer + s.Trick.PlayedCards.Length
            let nextPlayer = nextPlayer % s.Players.Length
            WaitForCard nextPlayer
+
+let init () =
+    let dog, players = deal 4 in
+    GameState.Playing {
+        Players = players |> Seq.mapi (fun i x -> {Index=i;Name = "asd";Cards=x}) |> Seq.toArray
+        Taker = 0
+        Trick = { StartingPlayer=0; PlayedCards = [] }
+        AttackerTricks = dog |> List.ofArray
+        DefenderTricks = []
+    }

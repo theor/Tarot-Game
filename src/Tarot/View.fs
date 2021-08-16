@@ -17,17 +17,21 @@ let ratio () = size.Value.y / size.Value.x
 let normalizedWidth = 1000.
 let normalizedHeight () = normalizedWidth * ratio()
 let zoomFactor () = size.Value.x / normalizedWidth
-//JS.console.log("win size", !size)
+////JS.console.log("win size", !size)
 let cardRatio = 272. / 148.
-let actualCardWidth = 100.
-let cardSize = if size.Value.x < size.Value.y
-               then {|x = actualCardWidth; y=actualCardWidth*cardRatio |}
-               else {|x = actualCardWidth/cardRatio; y=actualCardWidth |}
-let spaceX = cardSize.x * 0.25
+let actualCardWidth = 70.
+let cardSize() = //if size.Value.x > size.Value.y
+//                 then
+                     {|x = actualCardWidth; y=actualCardWidth*cardRatio |}
+//                 else {|x = actualCardWidth/cardRatio; y=actualCardWidth |}
+let spaceX() = cardSize().x * 0.3
 let spaceY = spaceX
+let resize w h =
+    size := {|x =w; y = h|}
+    JS.console.log("zf", zoomFactor())
 let trickCardPosition i =
-    normalizedWidth / 2. + float (i - 2) * spaceX - cardSize.x/2.,
-    normalizedHeight()
+    normalizedWidth / 2. + float (i - 2) * spaceX() - cardSize().x/2.,
+    normalizedHeight() / 2. - cardSize().y/2.
 
 let animeCmd (dispatch: Msg -> unit) (msg:Msg) (x:AnimInput) =
     x.complete <- fun a -> JS.console.log("Done, dispatching " + msg.ToString(), a); dispatch msg
@@ -54,14 +58,18 @@ let viewCard (cardClass:CardClass) (getPos: float*float) valid (onClick: (MouseE
               | None -> ()
           
         ] [
+        div [ Class "card-back"
+              Style [ //BackgroundSize $"7500px"
+                            Width <| !!cardSize().x
+                            Height <| !!cardSize().y ]  ] [ ]
         div [ yield classList [ cl,true
                                 "card-playable", Option.isSome onClick
                                 "valid", valid && Option.isSome onClick
                                 "invalid", not valid && Option.isSome onClick ]
               yield Style [ //BackgroundSize $"7500px"
-                            Width cardSize.x
-                            Height cardSize.y ] 
-        ] [ ]
+                            Width <| !!cardSize().x
+                            Height <| !!cardSize().y ] 
+        ] []
     ]
 
     
@@ -76,21 +84,21 @@ let viewPlayerGame dispatch (playing) (state:PlayingState) (p:Player) =
                                 x.targets <- !!e.currentTarget
                                 x.easing <- !!Easing.EaseOutQuint
 //                                x.round <- !!true
-                                x.duration <- !!1200.
+                                x.duration <- !!900.
                                 x.rotate <- !!jsOptions<PropertyParameters>(fun p ->
                                                                             p.value <- !!"1turn"// !!0.
                                                                             p.easing <- !!Easing.EaseOutSine
-                                                                            p.duration <- !!1000)
+                                                                            p.duration <- !!600)
                                 x.Item("left") <- !!(fst targetPos)
                                 x.Item("top") <- !!(snd targetPos)
                                 )
             )
         | _,_ -> None
     let (sx,sy), (fx,fy), dir = match p.Index with
-                                | 0 -> (* bottom *) (2.*cardSize.x, normalizedHeight() - cardSize.y),(spaceX,0.), Dir.Horizontal
-                                | 1 -> (* right *) (normalizedWidth - cardSize.y,0.),(0.,spaceY), Dir.Vertical
-                                | 2 -> (* top *) (2.*cardSize.x,0.),(spaceX,0.), Dir.Horizontal
-                                | _ -> (* left *) (cardSize.x / 2., 0.),(0.,spaceY), Dir.Vertical
+                                | 0 -> (* bottom *) (2.*cardSize().x, normalizedHeight() - cardSize().y),(spaceX(),0.), Dir.Horizontal
+                                | 1 -> (* right *) (normalizedWidth - cardSize().y,0.),(0.,spaceY()), Dir.Vertical
+                                | 2 -> (* top *) (2.*cardSize().x,0.),(spaceX(),0.), Dir.Horizontal
+                                | _ -> (* left *) (cardSize().x / 2., 0.),(0.,spaceY()), Dir.Vertical
 
     let mapCard i c =
         let valid = (cardCanBePlayed playing p.Index i)
@@ -105,13 +113,19 @@ let refHook dispatch elt =
     if isNullOrUndefined elt then ()
     else
         JS.console.log("ref START ANIM")
+        let l = (Browser.Dom.document.querySelectorAll ".table")
+        for i in 0..l.length-1 do
+            l.Item(i).classList.add("flipped")
         animeCmd dispatch EndRound
         <| jsOptions<Animejs.AnimInput>(fun x ->
+                x.delay <- !!1000.
                 x.targets <- !!".table" 
                 x.duration <- !!1000.
-                x.Item("left") <- !!(-cardSize.x)
+                x.Item("left") <- !!(-cardSize().x)
                 )
-let view (model: Model) dispatch =
+let view (m: Model) dispatch = 
+        let model = m
+        JS.console.log("cur wh", zoomFactor())
         match model with
         | GameState.Playing p ->
             let state = getPlayingState p

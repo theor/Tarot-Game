@@ -4,6 +4,8 @@ open Elmish
 open Elmish.Debug
 open Elmish.React
 open Fable.Core
+open Fable.React
+open Fable.React.Props
 open Fable.Import.Animejs
 open Fable.Import
 open Fulma
@@ -15,72 +17,60 @@ open Elmish.HMR
 open Fable.Core.JsInterop
 importAll "../sass/main.sass"
 
-// MODEL
+[<ImportMember("./Firebase.js")>]
+let loginFlow () = jsNative
 
+type User = {id:string}
+type AppModel<'m> = {
+    user: User option
+    model: 'm
+}
+
+module TestApp =
+    type TestModel = int
+    type TestMsg = Increment | Decrement
+    let testInit()= 0
+    let testUpdate msg m =
+        match msg with
+        | Increment -> m+1 
+        | Decrement -> m-1 
+    let testView m dispatch =
+        div [] [
+            div [] [str (string m)]
+            button [ OnClick (fun e -> dispatch Increment) ] [str "+"]
+            button [ OnClick (fun e -> dispatch Decrement) ] [str "-"]
+        ]
+
+// MODEL
+type Model = Tarot.Types.Model * int
 
 let init (): Model * Cmd<Msg> =
-    let dog, players = deal 4 in
-    GameState.Playing {
-        Players = players |> Seq.mapi (fun i x -> {Index=i;Name = "asd";Cards=x}) |> Seq.toArray
-        Taker = 0
-        Trick = { StartingPlayer=0; PlayedCards = [] }
-        AttackerTricks = dog |> List.ofArray
-        DefenderTricks = []
-    }, Cmd.none
+    
+    (Tarot.Game.init (), 0), Cmd.none
 
 // UPDATE
 
 
-let update (msg: Msg) (model: Model) =
-    match model with
-    | Playing playing ->
-        match msg with
-        | GetSize(w,h) ->
-            Tarot.View.size := {| x=w; y=h |}
-            JS.console.log("got size", !Tarot.View.size)
-            model, []
-        | EndRound ->
-            let winnerIndex, winnerCards, loserCards = trickWinner playing
-            let attackerCards,defenderCards =
-                if winnerIndex = playing.TakerPlayer.Index
-                then winnerCards,loserCards
-                else loserCards,winnerCards
-            JS.console.log("winner", winnerIndex)
-            Playing <| {playing with
-                            Trick = startTrick 0
-                            AttackerTricks = attackerCards @ playing.AttackerTricks
-                            DefenderTricks = defenderCards @ playing.DefenderTricks },[]
-        | PlayCard(p,ci) ->
-            let m',playedCard = playCard playing p.Index ci
-            Playing m', []// cmd
-        | _ -> failwithf "Action %A not implemented for state %A" msg model
-    | _ -> failwithf "Model %A Action %A not implemented" model msg
+let update (msg: Msg) (m: Model) =
+    let model,i = m
+    let model', cmd = Tarot.Update.update msg model
+    ((model', i), cmd)
+   
 
 // VIEW (rendered with React)
 
-open Tarot.Types
-
-let CardBack = 0x1F0A0
-let cardSymbol (c: Card) =
-    let uni =
-        match c with
-        | Trump t -> 0x1F0E0 + t
-        | Suit (t, s) ->
-            t
-            + match s with
-              | Suit.Spades -> 0x1F0A0
-              | Suit.Heart -> 0x1F0B0
-              | Suit.Diamonds -> 0x1F0C0
-              | Suit.Clubs -> 0x1F0D0
-//        | _ -> 0x1F0BF
-
-    Char.toUnicode (uni)
-
-
-
+let view (m,i) dispatch =
+    div [] [
+        div [ Id "firebase-auth" ] []
+        Fulma.Button.button [ Button.Option.OnClick (fun _ -> loginFlow()) ] [ str "login" ]
+        Tarot.View.view m dispatch
+    ]
 // App
-Program.mkProgram init update Tarot.View.view
+Program.mkProgram init update view
 |> Program.withReactSynchronous "elmish-app"
+|> Program.withSubscription (fun m -> Cmd.ofSub (fun dispatch ->
+    Browser.Dom.window.onresize <- fun e -> dispatch (GetSize(Browser.Dom.window.innerWidth, Browser.Dom.window.innerHeight)))
+    )
 #if DEBUG
 |> Program.withDebugger
 #endif

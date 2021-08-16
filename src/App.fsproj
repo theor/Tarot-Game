@@ -11,11 +11,14 @@
     <Compile Include="Tarot\Types.fs" />
     <Compile Include="Tarot\Game.fs" />
     <Compile Include="Tarot\View.fs" />
+    <Compile Include="Tarot\Update.fs" />
     <Compile Include="App.fs" />
+    <Content Include="Firebase.js" />
     <Content Include="paket.references" />
     <Content Include="..\sass\main.sass">
       <Link>main.sass</Link>
     </Content>
+    <Content Include="index.html" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>

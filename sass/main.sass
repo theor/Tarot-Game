@@ -23,6 +23,7 @@ canvas
 
 .playing-area
     border: solid 1px red
+    perspective: 1000px
 
 .game-open
     & > span
@@ -33,24 +34,53 @@ canvas
     height: 200px
 
 .card-wrapper
+    transform-origin: center center
+    &.horizontal > .card-back
+        transform: rotateY(180deg)
+    &.vertical > .card-back
+        transform: rotateY(180deg)
     &.vertical
         transform: rotate(90deg)
+    &:hover
+        z-index: 10
+    &.horizontal.flipped
+        transform: rotateY(180deg)
+    &.vertical.flipped
+        transform: rotateZ(90deg) rotateY(180deg)
     position: absolute
     box-shadow: none
+    //transition: transform 1s
+    transform-style: preserve-3d
 
+
+    
 $radius: 0.12
 $radius2: math.div($radius, 1.83)
-.card
-    border: 1px solid black
+@mixin card-shape
     box-shadow: none
-    //box-sizing: border-box
     border-radius: list.slash(percentage($radius),percentage($radius2))
+    backface-visibility: hidden
+    border: 1px solid black
+
+    
+
+.card-back
+    @include card-shape
+    //opacity: 0.8
+    background-image: url(../public/card-back.svg)
+    position: absolute
+    top: 0
+    left: 0
+    
+.card
+    @include card-shape
+    //box-sizing: border-box
     overflow: hidden
     &.valid
         //border: 1px solid green
         //margin-top: -20px
         &:hover
             border: 1px solid cyan
-            margin-top: -40px
+            //margin-top: -40px
     &.invalid
         border: 1px solid red
