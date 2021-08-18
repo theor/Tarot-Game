@@ -25,7 +25,9 @@ let logOut () = jsNative
 let onAuthStateChanged (cb: obj -> unit) = jsNative
 
 module Auth =
-    type User = {id:string}
+    type User = {id:string
+                 email: string
+                 name: string}
     type Model = User option
     type Msg =
         | LogOut
@@ -39,7 +41,7 @@ module Auth =
 
 
     let sub dispatch =
-        onAuthStateChanged(fun u -> dispatch(LoggedIn <| if isNullOrUndefined u then None else Some {id=string u}))
+        onAuthStateChanged(fun u -> dispatch(LoggedIn <| if isNullOrUndefined u then None else Some (u :?> User)))
     let update msg (model:Model) =
         match msg with
         | LogOut ->
