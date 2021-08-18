@@ -19,6 +19,9 @@
       <Link>main.sass</Link>
     </Content>
     <Content Include="index.html" />
+    <Content Include="..\package.json">
+      <Link>package.json</Link>
+    </Content>
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>
